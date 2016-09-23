@@ -60,7 +60,7 @@ class TcpHandshake(object):
     def send_fin(self):
         self.end_send = True
         self.l4[TCP].flags = "F"
-        self.send_simple(False)
+        self.send_simple()
         print("Fin sent at at "+date_to_str())
 
     def send_finack(self, pkt):
