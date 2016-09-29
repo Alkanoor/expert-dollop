@@ -23,6 +23,7 @@ class TcpHandshake(object):
 
         self.end_send = False
         self.end_receive = False
+        self.wait_for_final_ack = False
 
     def start(self):
         return self.send_syn()
@@ -91,6 +92,7 @@ class TcpHandshake(object):
                 self.ack += 1
                 if not self.end_send:
                     self.send_finack(answer_pkt)       # close communication on other side too
+                    self.wait_for_final_ack = True
                 else:
                     self.send_ack(answer_pkt)
                     self.end_receive = True
@@ -101,9 +103,14 @@ class TcpHandshake(object):
                 self.send_finack(answer_pkt)
                 self.end_receive = True
             else:
-                print("Received Unknown")
                 #self.ack += 1
-                self.send_ack(answer_pkt)
+                if answer_pkt[TCP].flags != 0x10:   #not ACK
+                    print("Received Unknown")
+                    self.send_ack(answer_pkt)
+                else:
+                    print("Received Ack")
+                    if self.wait_for_final_ack:
+                        self.end_receive = True
 
     def communication_ended(self):
         return self.end_send and self.end_receive
