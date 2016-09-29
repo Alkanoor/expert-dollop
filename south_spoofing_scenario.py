@@ -24,7 +24,8 @@ class South_spoofing_scenario(Openflow_scenario):
                 if len(to_send)>0:
                     self.tcp_handshake.send_data(to_send[0],self.last)
                     del to_send[0]
-        except:
+        except Exception,e:
+            print("Exception raised with "+str(e))
             self.end()
             exit()
 

@@ -42,11 +42,11 @@ class Openflow_scenario(Scenario):
         for c in ofpt_cls:
             if p.haslayer(ofpt_cls[c]):
                 return True
-        for c in ofp_stats_request_cls:
-            if p.haslayer(ofp_stats_request_cls[c]):
+        for c in ofp_multipart_request_cls:
+            if p.haslayer(ofp_multipart_request_cls[c]):
                 return True
-        for c in ofp_stats_reply_cls:
-            if p.haslayer(ofp_stats_reply_cls[c]):
+        for c in ofp_multipart_reply_cls:
+            if p.haslayer(ofp_multipart_reply_cls[c]):
                 return True
         for c in ofp_error_cls:
             if p.haslayer(ofp_error_cls[c]):
@@ -71,8 +71,8 @@ class Openflow_scenario(Scenario):
             self.answer_barrier = True
             return self.send_response()
         else:
-            for c in ofp_stats_request_cls:
-                if p.haslayer(ofp_stats_request_cls[c]):
+            for c in ofp_multipart_request_cls:
+                if p.haslayer(ofp_multipart_request_cls[c]):
                     self.stats_index = c
                     self.answer_stats = True
                     return self.send_response()
@@ -103,7 +103,7 @@ class Openflow_scenario(Scenario):
             self.counter_dict['stats'] += 1
             self.answer_stats = False
             print("Answer stats ")
-            return ofp_stats_reply_cls[self.stats_index]()
+            return ofp_multipart_reply_cls[self.stats_index]()
         return None
 
     def launch(self):
