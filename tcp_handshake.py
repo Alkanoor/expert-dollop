@@ -8,9 +8,10 @@ def date_to_str():
 
 class TcpHandshake(object):
 
-    def __init__(self, target):
+    def __init__(self, target, eth="eth0"):
         self.seq = 0
         self.ack = 0
+        self.eth = eth
         self.target = target
         self.dst = iter(Net(target[0])).next()
         self.dport = target[1]
@@ -34,7 +35,7 @@ class TcpHandshake(object):
         else:
             self.l4[TCP].ack = 0
         self.l4[TCP].seq = self.seq
-        send(self.l4, iface="vboxnet0")
+        send(self.l4, iface=self.eth)
 
     def send_syn(self):
         self.l4[TCP].flags = "S"
@@ -54,7 +55,7 @@ class TcpHandshake(object):
         self.l4[TCP].ack = self.ack
         self.l4[TCP].seq = self.seq
         print("Sending data with seq "+str(self.seq))
-        send(self.l4/d, iface="vboxnet0")
+        send(self.l4/d, iface=self.eth)
 
     def send_fin(self):
         self.end_send = True

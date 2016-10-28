@@ -19,13 +19,17 @@ class South_spoofing_scenario(Openflow_scenario):
 
             self.counter = 0
             to_send = []
-            while self.counter < 10:
+            while self.counter < 100:
                 to_send.extend(self.react_to(self.read_blocking()))
                 if len(to_send)>0:
                     self.tcp_handshake.send_data(to_send[0],self.last)
                     del to_send[0]
         except Exception,e:
             print("Exception raised with "+str(e))
+            self.end()
+            exit()
+        except Exception:
+            print("Exception caught, ending")
             self.end()
             exit()
 
