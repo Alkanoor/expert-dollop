@@ -15,8 +15,9 @@ class Openflow_scenario(Scenario):
         self.answer_role = False
         self.answer_stats = False
         self.answer_stats_ports = False
+        self.answer_request_port_desc = False
         self.answer_stats_manufacturer = False
-        self.counter_dict = {'echo':0,'config':0,'features':0,'barrier':0,'role':0,'stats':0}
+        self.counter_dict = {'echo':0,'config':0,'features':0,'barrier':0,'role':0,'stats':0,'port_desc':0}
 
     def react_to(self, pkt):
         to_send = []
@@ -26,10 +27,17 @@ class Openflow_scenario(Scenario):
 
             print(repr(cur_payload))
             if self.is_openflow(p):
-                while cur_payload.len != len(cur_payload):
-                    cur_payload = TCP.guess_payload_class(p[TCP],str(cur_payload.payload))(str(cur_payload.payload))
-                    additional_pkts.append(cur_payload)
-                    print(repr(cur_payload))
+                try:
+                    while cur_payload.len != len(cur_payload):
+                        cur_payload = TCP.guess_payload_class(p[TCP],str(cur_payload.payload))(str(cur_payload.payload))
+                        additional_pkts.append(cur_payload)
+                        print(repr(cur_payload))
+                except Exception, e:
+                    print("================================================")
+                    print("================================================")
+                    print("Shouldn't happen but sometimes ... "+str(e))
+                    print("================================================")
+                    print("================================================")
 
             print(str(len(additional_pkts))+" found !")
 
@@ -80,6 +88,9 @@ class Openflow_scenario(Scenario):
         elif p.haslayer(OFPTRoleRequest):
             self.answer_role = True
             return self.send_response()
+        elif p.haslayer(OFPMPRequestPortDesc):
+            self.answer_request_port_desc = True
+            return self.send_response()
         else:
             for c in ofp_multipart_request_cls:
                 if p.haslayer(ofp_multipart_request_cls[c]):
@@ -120,6 +131,11 @@ class Openflow_scenario(Scenario):
             self.answer_role = False
             print("Answer role")
             return OFPTRoleReply(xid=self.xid, role="OFPCR_ROLE_MASTER")
+        elif self.answer_request_port_desc:
+            self.counter_dict['port_desc'] += 1
+            self.answer_request_port_desc = False
+            print("Answer port description")
+            return OFPMPReplyPortDesc(xid=self.xid, ports=[OFPPort(port_no=1, hw_addr="77:66:33:33:66:77", port_name="theresa lisa", curr="100MB_HD", supported="1TB_FD", curr_speed=100000000)])
         elif self.answer_stats:
             self.counter_dict['stats'] += 1
             self.answer_stats = False

@@ -22,20 +22,36 @@ class TcpHandshake(object):
         self.swin = self.l4[TCP].window
         self.dwin = 1
 
+        self.previous_length = 0
+
         self.end_send = False
         self.end_receive = False
+        self.wait_for_ack = -1
         self.wait_for_final_ack = False
+
+        self.blocked = False
+        self.blocked_basic_send = False
 
     def start(self):
         return self.send_syn()
 
     def send_simple(self, set_ack = True):
+        while self.blocked_basic_send:
+            time.sleep(0.05)
+        self.blocked_basic_send = True
+
         if set_ack:
             self.l4[TCP].ack = self.ack
         else:
             self.l4[TCP].ack = 0
         self.l4[TCP].seq = self.seq
+
+        self.previous_length = 0
         send(self.l4, iface=self.eth)
+        if self.l4[TCP].flags != 0x10:
+            self.wait_for_ack = int(self.seq)+1
+
+        self.blocked_basic_send = False
 
     def send_syn(self):
         self.l4[TCP].flags = "S"
@@ -47,15 +63,49 @@ class TcpHandshake(object):
         self.send_simple()
         print("Syn Ack sent at "+date_to_str())
 
-    def send_data(self, d, previous):
+    def send_data(self, d, previous, wait_for_ack=True):
+        while self.blocked or self.blocked_basic_send:
+            time.sleep(0.05)
+        self.blocked = True
+
         self.l4[TCP].flags = "PA"
         payload_length = previous[IP].len-4*previous[IP].ihl-4*previous[TCP].dataofs
-        self.seq = previous[TCP].ack
-        self.ack = previous[TCP].seq + payload_length
+        if previous[TCP].ack >= self.seq:
+            self.seq = previous[TCP].ack
+            self.ack = previous[TCP].seq + payload_length
+        else:
+            print("Send data with ack inferior => aie")
         self.l4[TCP].ack = self.ack
         self.l4[TCP].seq = self.seq
-        print("Sending data with seq "+str(self.seq))
+        print("Sending data with seq "+str(self.seq)+" and length of d "+str(len(d))+" and waiting for "+str(self.wait_for_ack))
+        while self.wait_for_ack>=0:
+            time.sleep(0.1)
+        self.previous_length = len(d)
+
         send(self.l4/d, iface=self.eth)
+        if wait_for_ack:
+            self.wait_for_ack = int(self.seq)+len(d)
+
+        self.blocked = False
+
+    def send_data_no_previous(self, d, wait_for_ack=True):
+        while self.blocked or self.blocked_basic_send:
+            time.sleep(0.05)
+        self.blocked = True
+
+        self.l4[TCP].flags = "PA"
+        self.seq = self.seq+self.previous_length
+        self.l4[TCP].seq = self.seq
+        print("Sending data no previous packet with seq "+str(self.seq)+" and previous length of "+str(self.previous_length)+" and waiting for "+str(self.wait_for_ack))
+        while self.wait_for_ack>=0:
+            time.sleep(0.1)
+        self.previous_length = len(d)
+
+        send(self.l4/d, iface=self.eth)
+        if wait_for_ack:
+            self.wait_for_ack = int(self.seq)+len(d)
+
+        self.blocked = False
 
     def send_fin(self):
         self.end_send = True
@@ -78,8 +128,20 @@ class TcpHandshake(object):
     def analyse_state_and_answer(self, answer_pkt):
         if answer_pkt and answer_pkt.haslayer(IP) and answer_pkt.haslayer(TCP):
             payload_length = answer_pkt[IP].len-4*answer_pkt[IP].ihl-4*answer_pkt[TCP].dataofs
-            self.seq = answer_pkt[TCP].ack
-            self.ack = answer_pkt[TCP].seq + payload_length
+
+            if answer_pkt[TCP].ack >= self.seq:
+                self.seq = answer_pkt[TCP].ack
+                self.ack = answer_pkt[TCP].seq + payload_length
+                print("Received Ack superior "+str(answer_pkt[TCP].ack))
+            else:
+                print("Received Ack inferior "+hex(answer_pkt[TCP].ack))
+            if answer_pkt[TCP].flags & 0x10 != 0:
+                if answer_pkt[TCP].ack == self.wait_for_ack:
+                    self.wait_for_ack = -1
+                if answer_pkt[TCP].ack >= self.seq:
+                    self.previous_length = 0
+                print("TCP flag before => S="+str(self.seq)+" A="+hex(self.ack))
+
             if answer_pkt[TCP].flags & 0x12 == 0x12:   # SYN+ACK
                 print("Received Syn Ack")
                 self.ack += 1
@@ -88,6 +150,8 @@ class TcpHandshake(object):
                 print("Received Rst")
                 self.end_receive = True
                 self.end_send = True
+                print("Exiting")
+                exit()
             elif answer_pkt[TCP].flags & 0x11 == 0x11: # FIN+ACK
                 print("Received Fin Ack")
                 self.ack += 1
