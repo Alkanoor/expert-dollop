@@ -19,12 +19,15 @@ analyse_scenario = Openflow_session_scenario(sniffing_thread,t)
 analyse_scenario.launch_threaded()
 
 time.sleep(5)
-print("BEGINNNINNNNG!")
 
-craft_packets = Craft_faked(t, "LLDP","0a:00:27:00:00:00","a5:23:05:00:00:01")
+craft_packets = Craft_faked(t, "LLDP", ("02:eb:9f:67:c9:42", "a5:23:05:00:00:01", "00:00:00:00:00:01", 2))
 craft_packets.send()
-craft_packets = Craft_faked(t, "LLDP","0a:00:27:00:00:00","a5:23:05:00:00:02")
+craft_packets = Craft_faked(t, "LLDP", ("02:eb:9f:67:c9:42", "a5:23:05:00:00:01", "00:00:00:00:00:02", 2))
 craft_packets.send()
+# craft_packets = Craft_faked(t, "LLDP","ba:d1:de:a0:00:00","aa:bb:cc:cc:bb:ac")
+# craft_packets.send()
+# craft_packets = Craft_faked(t, "LLDP","aa:bb:cc:cc:bb:ac","ba:d1:de:a0:00:00")
+# craft_packets.send()
 
 print("ENNDINNNNG!")
 time.sleep(5)
