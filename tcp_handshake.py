@@ -78,8 +78,9 @@ class TcpHandshake(object):
         self.l4[TCP].ack = self.ack
         self.l4[TCP].seq = self.seq
         print("Sending data with seq "+str(self.seq)+" and length of d "+str(len(d))+" and waiting for "+str(self.wait_for_ack))
-        while self.wait_for_ack>=0:
-            time.sleep(0.1)
+        if wait_for_ack:
+            while self.wait_for_ack>=0:
+                time.sleep(0.1)
         self.previous_length = len(d)
 
         send(self.l4/d, iface=self.eth)
@@ -88,17 +89,23 @@ class TcpHandshake(object):
 
         self.blocked = False
 
-    def send_data_no_previous(self, d, wait_for_ack=True):
-        while self.blocked or self.blocked_basic_send:
-            time.sleep(0.05)
+    def send_data_no_previous(self, d, wait_for_ack=True, exit_to_check=False):
+        if wait_for_ack:
+            while self.blocked or self.blocked_basic_send:
+                time.sleep(0.05)
         self.blocked = True
 
         self.l4[TCP].flags = "PA"
         self.seq = self.seq+self.previous_length
         self.l4[TCP].seq = self.seq
+
         print("Sending data no previous packet with seq "+str(self.seq)+" and previous length of "+str(self.previous_length)+" and waiting for "+str(self.wait_for_ack))
-        while self.wait_for_ack>=0:
-            time.sleep(0.1)
+        if wait_for_ack:
+            while self.wait_for_ack>=0:
+                time.sleep(0.1)
+        if exit_to_check:
+            print("Exiting in lol")
+            os._exit(1)
         self.previous_length = len(d)
 
         send(self.l4/d, iface=self.eth)

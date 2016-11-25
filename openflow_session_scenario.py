@@ -6,8 +6,8 @@ from openflow_scenario import Openflow_scenario
 
 class Openflow_session_scenario(Openflow_scenario):
 
-    def __init__(self, sniff_thread, tcp_handshake):
-        Openflow_scenario.__init__(self, sniff_thread, tcp_handshake)
+    def __init__(self, sniff_thread, tcp_handshake, dpid):
+        Openflow_scenario.__init__(self, sniff_thread, tcp_handshake, dpid)
         self.block = False
 
     def treat_and_send(self, to_send):
@@ -25,7 +25,7 @@ class Openflow_session_scenario(Openflow_scenario):
 
             self.counter = 0
             to_send = []
-            while self.counter < 100:
+            while self.counter < 100000:
                 to_send.extend(self.react_to(self.read_blocking()))
                 if len(to_send)>0 and not self.block:
                     self.block = True

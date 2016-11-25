@@ -5,7 +5,7 @@ from scapy.all import *
 
 class Sniff_thread:
 
-    def __init__(self, iface, dst, sport, dport, count = 1000):
+    def __init__(self, iface, dst, sport, dport, count = 100000):
         self.iface = iface
         self.dst = dst
         self.sport = sport
