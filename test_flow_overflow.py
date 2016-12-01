@@ -36,10 +36,8 @@ for i in range(1000):
     print("(((((((((((((((((((((((((((((((((((((((((((((((((((((((())))))))))))))))))))))))))))))))))))))))))))))))))))))))")
     print(random_mac())
     print(random_ip())
-    craft_packets = Craft_faked(t, "ARP", (random_mac(), "ba:d1:de:a0:00:00", random_ip(), 'c0a8383a'))
+    craft_packets = Craft_faked(t, "PING", (random_mac(), "ba:d1:de:a0:00:00", random_ip(), 'c0a8383a'))
     craft_packets.send()
-craft_packets = Craft_faked(t, "PING", "a5:23:05:00:00:01", "a5:23:05:00:00:03")
-craft_packets.send()
 
 
 analyse_scenario.end()
